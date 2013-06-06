@@ -19,12 +19,6 @@
  */
 package com.googlecode.fascinator.storage.fedora;
 
-import com.googlecode.fascinator.api.storage.Payload;
-import com.googlecode.fascinator.api.storage.PayloadType;
-import com.googlecode.fascinator.api.storage.StorageException;
-import com.googlecode.fascinator.common.MimeTypeUtil;
-import com.googlecode.fascinator.common.storage.impl.GenericDigitalObject;
-
 import java.io.File;
 import java.io.FileInputStream;
 import java.io.FileNotFoundException;
@@ -41,24 +35,27 @@ import org.fcrepo.server.types.gen.Datastream;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import com.googlecode.fascinator.api.storage.Payload;
+import com.googlecode.fascinator.api.storage.PayloadType;
+import com.googlecode.fascinator.api.storage.StorageException;
+import com.googlecode.fascinator.common.MimeTypeUtil;
+import com.googlecode.fascinator.common.storage.impl.GenericDigitalObject;
+
 /**
  * Maps a Fedora object to a Fascinator digital object.
- *
+ * 
  * @author Oliver Lucido
  * @author Greg Pendlebury
  */
 public class Fedora3DigitalObject extends GenericDigitalObject {
     /* Fedora log message for adding a payload */
-    private static String ADD_LOG_MESSAGE =
-            "Fedora3Payload added";
+    private static String ADD_LOG_MESSAGE = "Fedora3Payload added";
 
     /* Fedora log message for deleting a payload */
-    private static String DELETE_LOG_MESSAGE =
-            "Fedora3Payload deleted";
+    private static String DELETE_LOG_MESSAGE = "Fedora3Payload deleted";
 
     /* Fedora log message for adding a payload */
-    private static String UPDATE_LOG_MESSAGE =
-            "Fedora3Payload updated";
+    private static String UPDATE_LOG_MESSAGE = "Fedora3Payload updated";
 
     /** Logging */
     private Logger log = LoggerFactory.getLogger(Fedora3DigitalObject.class);
@@ -74,7 +71,8 @@ public class Fedora3DigitalObject extends GenericDigitalObject {
      */
     public Fedora3DigitalObject(String oid, String fedoraPid) {
         super(oid);
-        //log.debug("Construct Fedora3DigitalObject oid={} fid={}", oid, fedoraPid);
+        // log.debug("Construct Fedora3DigitalObject oid={} fid={}", oid,
+        // fedoraPid);
         this.fedoraPid = fedoraPid;
         buildManifest();
     }
@@ -84,7 +82,7 @@ public class Fedora3DigitalObject extends GenericDigitalObject {
      * 
      */
     private void buildManifest() {
-        //log.debug("buildManifest({})", getId());
+        // log.debug("buildManifest({})", getId());
         // Get a (presumably) empty manifest from our superclass
         Map<String, Payload> manifest = getManifest();
         try {
@@ -123,8 +121,8 @@ public class Fedora3DigitalObject extends GenericDigitalObject {
     }
 
     /**
-     * Created a stored payload in storage as a datastream of this Object.
-     * This is the only payload supported by this plugin.
+     * Created a stored payload in storage as a datastream of this Object. This
+     * is the only payload supported by this plugin.
      * 
      * @param pid the Payload ID to use
      * @param in an InputStream containing the data to store
@@ -132,9 +130,9 @@ public class Fedora3DigitalObject extends GenericDigitalObject {
      * @throws StorageException if any errors occur
      */
     @Override
-    public Payload createStoredPayload(String pid, InputStream in)
+    public synchronized Payload createStoredPayload(String pid, InputStream in)
             throws StorageException {
-        //log.debug("createStoredPayload({},{})", getId(), pid);
+        // log.debug("createStoredPayload({},{})", getId(), pid);
         if (pid == null || in == null) {
             throw new StorageException("Error; Null parameter recieved");
         }
@@ -161,7 +159,7 @@ public class Fedora3DigitalObject extends GenericDigitalObject {
             File tempFile = createTempFile(pid, in);
             if (tempFile == null) {
                 throw new StorageException("pID '" + pid
-                + "' failed to cache temp file.");
+                        + "' failed to cache temp file.");
             }
             // Grab the MIME type before we delete it
             String contentType = MimeTypeUtil.getMimeType(tempFile);
@@ -169,25 +167,24 @@ public class Fedora3DigitalObject extends GenericDigitalObject {
             String tempUrl = uploadData(tempFile);
             if (tempUrl == null) {
                 throw new StorageException("pID '" + pid
-                + "' failed to upload to Fedora.");
+                        + "' failed to upload to Fedora.");
             }
 
             // Now create the datastream and point it at our temp URL
-            String[] altIds = new String[] {type.toString(), pid};
-            Fedora3.getApiM().addDatastream(
-                fedoraPid,         // Fedora PID
-                dsId,              // Fedora DSID
-                altIds,            // Alt IDs
-                pid,               // Label
-                false,             // Versionable
-                contentType,       // MIME type
-                null,              // Format URI
-                tempUrl,           // Datastream Location
-                "M",               // Control Group
-                "A",               // State
-                null,              // ChecksumType
-                null,              // Checksum
-                ADD_LOG_MESSAGE);  // Log message
+            String[] altIds = new String[] { type.toString(), pid };
+            Fedora3.getApiM().addDatastream(fedoraPid, // Fedora PID
+                    dsId, // Fedora DSID
+                    altIds, // Alt IDs
+                    pid, // Label
+                    false, // Versionable
+                    contentType, // MIME type
+                    null, // Format URI
+                    tempUrl, // Datastream Location
+                    "M", // Control Group
+                    "A", // State
+                    null, // ChecksumType
+                    null, // Checksum
+                    ADD_LOG_MESSAGE); // Log message
 
             // Tidy up and return
             manifest.put(pid, null); // A fudge for now, or the next line fails
@@ -211,12 +208,12 @@ public class Fedora3DigitalObject extends GenericDigitalObject {
      * @throws StorageException if any errors occur
      */
     @Override
-    public Payload createLinkedPayload(String pid, String linkPath)
+    public synchronized Payload createLinkedPayload(String pid, String linkPath)
             throws StorageException {
         log.warn("This storage plugin does not support linked payloads..."
                 + " converting to stored.");
-        //log.debug("createLinkedPayload({},{},{})",
-        //        new String[] {getId(), pid, linkPath});
+        // log.debug("createLinkedPayload({},{},{})",
+        // new String[] {getId(), pid, linkPath});
         try {
             FileInputStream in = new FileInputStream(linkPath);
             return createStoredPayload(pid, in);
@@ -233,8 +230,8 @@ public class Fedora3DigitalObject extends GenericDigitalObject {
      * @throws StorageException if any errors occur
      */
     @Override
-    public Payload getPayload(String pid) throws StorageException {
-        //log.debug("getPayload({},{})", getId(), pid);
+    public synchronized Payload getPayload(String pid) throws StorageException {
+        // log.debug("getPayload({},{})", getId(), pid);
         if (pid == null) {
             throw new StorageException("Error; Null PID recieved");
         }
@@ -243,12 +240,13 @@ public class Fedora3DigitalObject extends GenericDigitalObject {
         Map<String, Payload> manifest = getManifest();
         if (!manifest.containsKey(pid)) {
             throw new StorageException("pID '" + pid + "': was not found");
-        
+
         }
 
         String dsId = getDatastreamId(pid);
         try {
-            Datastream datastream = Fedora3.getApiM().getDatastream(fedoraPid, dsId, null);
+            Datastream datastream = Fedora3.getApiM().getDatastream(fedoraPid,
+                    dsId, null);
             if (datastream == null) {
                 throw new StorageException("pID '" + pid + "' does not exist.");
             } else {
@@ -267,8 +265,8 @@ public class Fedora3DigitalObject extends GenericDigitalObject {
      * @throws StorageException if any errors occur
      */
     @Override
-    public void removePayload(String pid) throws StorageException {
-        //log.debug("removePayload({},{})", getId(), pid);
+    public synchronized void removePayload(String pid) throws StorageException {
+        // log.debug("removePayload({},{})", getId(), pid);
         if (pid == null) {
             throw new StorageException("Error; Null PID recieved");
         }
@@ -277,19 +275,17 @@ public class Fedora3DigitalObject extends GenericDigitalObject {
         Map<String, Payload> manifest = getManifest();
         if (!manifest.containsKey(pid)) {
             throw new StorageException("pID '" + pid + "': was not found");
-        
+
         }
 
         String dsId = getDatastreamId(pid);
         try {
-            Fedora3.getApiM().purgeDatastream(
-                    fedoraPid, // Fedora PID
-                    dsId,      // Fedora DSID
-                    null,      // Start datetime: null = earliest
-                    null,      // End datetime: null = latest
+            Fedora3.getApiM().purgeDatastream(fedoraPid, // Fedora PID
+                    dsId, // Fedora DSID
+                    null, // Start datetime: null = earliest
+                    null, // End datetime: null = latest
                     DELETE_LOG_MESSAGE, // Log message
-                    false
-                );
+                    false);
             manifest.remove(pid);
         } catch (IOException ex) {
             log.error("Error in Fedora query: ", ex);
@@ -307,9 +303,9 @@ public class Fedora3DigitalObject extends GenericDigitalObject {
      * @throws StorageException if any errors occur
      */
     @Override
-    public Payload updatePayload(String pid, InputStream in)
+    public synchronized Payload updatePayload(String pid, InputStream in)
             throws StorageException {
-        //log.debug("updatePayload({},{})", getId(), pid);
+        // log.debug("updatePayload({},{})", getId(), pid);
         if (pid == null || in == null) {
             throw new StorageException("Error; Null parameter recieved");
         }
@@ -329,7 +325,7 @@ public class Fedora3DigitalObject extends GenericDigitalObject {
             File tempFile = createTempFile(pid, in);
             if (tempFile == null) {
                 throw new StorageException("pID '" + pid
-                + "' failed to cache temp file.");
+                        + "' failed to cache temp file.");
             }
             // Grab the MIME type before we delete it
             String contentType = MimeTypeUtil.getMimeType(tempFile);
@@ -337,25 +333,25 @@ public class Fedora3DigitalObject extends GenericDigitalObject {
             String tempUrl = uploadData(tempFile);
             if (tempUrl == null) {
                 throw new StorageException("pID '" + pid
-                + "' failed to upload to Fedora.");
+                        + "' failed to upload to Fedora.");
             }
 
             // Now create the datastream and point it at our temp URL
-            String[] altIds = new String[] {payload.getType().toString(), pid};
+            String[] altIds = new String[] { payload.getType().toString(), pid };
             String dsLabel = payload.getLabel();
-            Fedora3.getApiM().modifyDatastreamByReference(
-                    fedoraPid,  // Fedora PID
-                    dsId,       // Fedora DSID
-                    altIds,     // Alternate IDs : Array
-                    dsLabel,    // Label
+            Fedora3.getApiM().modifyDatastreamByReference(fedoraPid, // Fedora
+                                                                     // PID
+                    dsId, // Fedora DSID
+                    altIds, // Alternate IDs : Array
+                    dsLabel, // Label
                     contentType, // MIME Type
-                    null,       // Format URI
-                    tempUrl,    // Location
-                    null,       // Checksum Type
-                    null,       // Checksum
+                    null, // Format URI
+                    tempUrl, // Location
+                    null, // Checksum Type
+                    null, // Checksum
                     UPDATE_LOG_MESSAGE, // Log Message
-                    false       // Force an update through integrity violations
-                );
+                    false // Force an update through integrity violations
+                    );
             // Remember to update our manifest
             payload = getPayload(pid);
             manifest.put(pid, payload);
@@ -366,8 +362,8 @@ public class Fedora3DigitalObject extends GenericDigitalObject {
     }
 
     /**
-     * Translate a Fascinator PID into a hashed datastream ID for Fedora.
-     * Should prevent any issues related to special characters being used in IDs
+     * Translate a Fascinator PID into a hashed datastream ID for Fedora. Should
+     * prevent any issues related to special characters being used in IDs
      * 
      * @param pid the Payload ID from Fascinator
      * @return String the dsId to use in Fedora
@@ -414,14 +410,14 @@ public class Fedora3DigitalObject extends GenericDigitalObject {
     }
 
     /**
-     * Upload a File to Fedora, returning the temporary URL Fedora
-     * will need to access it.
+     * Upload a File to Fedora, returning the temporary URL Fedora will need to
+     * access it.
      * 
      * @param pid the local Fascinator Payload ID used in creating a temp file
      * @param in an InputStream containing the data to upload
      * @return String The temporary URL in Fedora, or NULL if a failure occurs
      */
-    private String uploadData(File file) {
+    private synchronized String uploadData(File file) {
         try {
             return Fedora3.getClient().uploadFile(file);
         } catch (IOException ex) {

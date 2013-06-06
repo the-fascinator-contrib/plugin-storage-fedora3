@@ -265,7 +265,8 @@ public class Fedora3Storage implements Storage {
      * @throws StorageException if any errors occur
      */
     @Override
-    public DigitalObject createObject(String oid) throws StorageException {
+    public synchronized DigitalObject createObject(String oid)
+            throws StorageException {
         // log.debug("createObject({})", oid);
         if (oid == null) {
             throw new StorageException("Error; Null OID recieved");
@@ -346,7 +347,7 @@ public class Fedora3Storage implements Storage {
      * @throws StorageException if any errors occur
      */
     @Override
-    public void removeObject(String oid) throws StorageException {
+    public synchronized void removeObject(String oid) throws StorageException {
         // log.debug("removeObject({})", oid);
         if (oid == null) {
             throw new StorageException("Error; Null OID recieved");
